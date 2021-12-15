@@ -4,6 +4,7 @@ import rospy
 import time
 sys . path . insert (1, ’/ path /to/ folder / niryo_one_python_api ’)
 
+#example code given by the staff and modified with joints done in lab
 from niryo_one_api import *
 rospy . init_node (’ niryo_one_example_python_api ’)
 
@@ -34,5 +35,7 @@ try :
     #final point
     joints = [0.23902 , -1.1541 , -0.25332 , 0.13195 , -0.1974 , 0.14172]
     n.move_joints(joints)
+
+
 except NiryoOneException as e:
     print(e)
