@@ -1,0 +1,39 @@
+blocks: 4
+block_height: 0.032
+block_uncertainty: 0.002
+
+origin:
+  x: 0.112
+  y: -0.1869
+  roll: 0
+  pitch: 1.570795
+  yaw: 0
+
+goal4:
+  x: 0.249
+  y: 0.0859
+  roll: 0
+  pitch: 1.570795
+  yaw: 0
+
+goal3:
+  x: 0.216
+  y: 0.0849
+  roll: 0
+  pitch: 1.570795
+  yaw: -1.570795
+
+goal2:
+  x: 0.250
+  y: 0.0529
+  roll: 0
+  pitch: 1.570795
+  yaw: 1.570795
+
+goal1:
+  x: 0.217
+  y: 0.0519
+  roll: 0
+  pitch: 1.570795
+  yaw: 0
+
