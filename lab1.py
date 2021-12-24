@@ -4,8 +4,10 @@
 import sys
 import yaml
 import rospy  # type: ignore
+import argparse
 
 from datetime import datetime
+from os.path import exists as file_exists
 from niryo_one_python_api.niryo_one_api import *  # type: ignore
 
 sys.path.insert(1, "/home/vaco/catkin_ws/src/niryo_one_python_api")  # type: ignore
@@ -19,13 +21,33 @@ actions = []
 start_time = datetime.now()
 
 # Auxiliary functions
-def load_params(config_file):
-    # TODO: check if file exists
 
+
+def get_cmd_line_params():
+    parser = argparse.ArgumentParser(description="Tilling problem with Niryo One Robot")
+
+    parser.add_argument("-f", "--file", metavar="FILE", type=str, help="Name of the YAML config file")
+
+    parser.add_argument(
+        "-l",
+        "--log",
+        action="store_true",
+        help="Store a log file",
+    )
+
+    args = parser.parse_args()
+
+    return vars(args)
+
+
+def load_params(config_file):
     params = {}
 
     if not config_file:
         raise SystemExit("A file with the points must be specified")
+
+    if not file_exists(config_file + ".yaml"):
+        raise SystemExit("The specified config file does not exist")
 
     with open(config_file + ".yaml") as parameters:
         params = yaml.safe_load(parameters)
@@ -82,7 +104,7 @@ def fetchBlock(pos, z):
     moveRobot(pos["x"], pos["y"], z + 0.02, pos["roll"], pos["pitch"], pos["yaw"])
 
     # fetches the block
-    changeVelocity(15)
+    changeVelocity(5)
     moveRobot(pos["x"], pos["y"], z, pos["roll"], pos["pitch"], pos["yaw"])
 
     # hovers origin with the block
@@ -105,7 +127,9 @@ def dropBlock(pos, z):
 
 # Functional block
 try:
-    params = load_params("params")
+    cmd_params = get_cmd_line_params()
+
+    params = load_params(cmd_params["file"])
 
     print(" --- Starting to move blocks --- \n")
 
@@ -127,7 +151,7 @@ try:
 
     print(" --- Moved all the blocks --- \n")
 
-    if raw_input("Type y to save the robot's log:") == "y":  # type: ignore
+    if cmd_params["log"]:  # type: ignore
         with open("logs.txt", "w") as f:
             for action in actions:
                 f.write(action + "\n")
