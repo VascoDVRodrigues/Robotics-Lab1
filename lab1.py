@@ -3,7 +3,6 @@
 
 import sys
 import yaml
-from yaml.loader import Loader
 import rospy  # type: ignore
 
 from datetime import datetime
@@ -21,6 +20,8 @@ start_time = datetime.now()
 
 # Auxiliary functions
 def load_params(config_file):
+    # TODO: check if file exists
+
     params = {}
 
     if not config_file:
@@ -72,88 +73,59 @@ def changeVelocity(speed):
 
 
 # Functions to handle how parameters change
-def fetchBlock(a1, a2, a4, a5, a6, block_id, block_height, block_uncertainty):
-    print("--- Slowing down the arm ---\n")
+def fetchBlock(pos, z):
+    print("--- Fetching block ---\n")
 
-    height = (block_id * block_height) + ((0.5 * block_id + 0.5) * block_uncertainty)
-
+    # hovers origin
     changeVelocity(90)
-    moveRobot(a1, a2, height + 0.023, a4, a5, a6)
+    moveRobot(pos["x"], pos["y"] + 0.035, z + 0.02, pos["roll"], pos["pitch"], pos["yaw"])
+    moveRobot(pos["x"], pos["y"], z + 0.02, pos["roll"], pos["pitch"], pos["yaw"])
 
-    changeVelocity(5)
-    moveRobot(a1, a2, height, a4, a5, a6)
-    moveRobot(a1, a2, height + 0.01, a4, a5, a6)
+    # fetches the block
+    changeVelocity(15)
+    moveRobot(pos["x"], pos["y"], z, pos["roll"], pos["pitch"], pos["yaw"])
+
+    # hovers origin with the block
+    moveRobot(pos["x"], pos["y"], z + 0.02, pos["roll"], pos["pitch"], pos["yaw"])
+    moveRobot(pos["x"], pos["y"] + 0.035, z + 0.02, pos["roll"], pos["pitch"], pos["yaw"])
 
 
-def dropBlock(blockNumber):
-    print("--- Moving to Goal ---\n")
+def dropBlock(pos, z):
+    print("--- Dropping block ---\n")
 
-    if blockNumber == 1:
-        changeVelocity(20)
-        moveRobot(0.249, 0.0859, 0.143, 0, pi / 2, 0)
-        # sleep
-        moveRobot(0.249, 0.0859, 0.033, 0, pi / 2, 0)
-        # sleep to let the block "drop"
-        changeVelocity(90)
-        moveRobot(0.249, 0.0859, 0.143, 0, pi / 2, 0)
+    # hovers target area with the block
+    moveRobot(pos["x"], pos["y"], 2 * z + 0.02, pos["roll"], pos["pitch"], pos["yaw"])
 
-    elif blockNumber == 2:
-        changeVelocity(20)
-        moveRobot(0.216, 0.0849, 0.11, 0, pi / 2, -pi / 2)
-        # sleep
-        moveRobot(0.216, 0.0849, 0.033, 0, pi / 2, -pi / 2)
-        # sleep to let the block "drop"
-        changeVelocity(90)
-        moveRobot(0.216, 0.0849, 0.11, 0, pi / 2, -pi / 2)
+    # drops the block
+    moveRobot(pos["x"], pos["y"], z, pos["roll"], pos["pitch"], pos["yaw"])
 
-    elif blockNumber == 3:
-        changeVelocity(20)
-        moveRobot(0.250, 0.0529, 0.077, 0, pi / 2, pi / 2)
-        # sleep
-        moveRobot(0.250, 0.0529, 0.033, 0, pi / 2, pi / 2)
-        # sleep to let the block "drop"
-        changeVelocity(90)
-        moveRobot(0.250, 0.0529, 0.077, 0, pi / 2, pi / 2)
-
-    else:
-        changeVelocity(20)
-        moveRobot(0.217, 0.0519, 0.044, 0, pi / 2, 0)
-        # sleep
-        moveRobot(0.217, 0.0519, 0.033, 0, pi / 2, 0)
-        # sleep to let the block "drop"
-        changeVelocity(90)
-        moveRobot(0.217, 0.0519, 0.044, 0, pi / 2, 0)
+    # hovers target area with the block
+    moveRobot(pos["x"], pos["y"], z + 0.02, pos["roll"], pos["pitch"], pos["yaw"])
 
 
 # Functional block
 try:
     params = load_params("params")
 
-    print(" --- Starting Monte --- ")
+    print(" --- Starting to move blocks --- \n")
 
     # TODO: handle logs
-    print(" --- Starting to record log --- ")
+    print(" --- Starting to log actions --- \n")
 
     calibrateRobot()
-
     resetPosition()
 
     for block_id in range(1, params["blocks"] + 1)[::-1]:
-        fetchBlock(
-            params["origin"][0][0],
-            params["origin"][0][1],
-            params["origin"][1][0],
-            params["origin"][1][1],
-            params["origin"][1][2],
-            block_id,
-            params["block_height"],
-            params["block_uncertainty"],
-        )
-        dropBlock(block_id)
+        initial_z = (block_id * params["block_height"]) + ((0.5 * block_id + 0.5) * params["block_uncertainty"])
+        target_z = params["block_height"]
+
+        fetchBlock(params["origin"], initial_z)
+
+        dropBlock(params["goal" + str(block_id)], target_z)
 
     resetPosition()
 
-    print(" --- Ended the trajectory intended --- \n")
+    print(" --- Moved all the blocks --- \n")
 
     if raw_input("Type y to save the robot's log:") == "y":  # type: ignore
         with open("logs.txt", "w") as f:
