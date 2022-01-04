@@ -9,6 +9,8 @@ import argparse
 from datetime import datetime
 from os.path import exists as file_exists
 from niryo_one_python_api.niryo_one_api import *  # type: ignore
+from niryo_one_msgs.msg._RobotState import *  # type: ignore
+from geometry_msgs.msg._Point import *
 
 sys.path.insert(1, "/home/vaco/catkin_ws/src/niryo_one_python_api")  # type: ignore
 
@@ -18,6 +20,7 @@ pi = 3.14159
 n = NiryoOne()  # type: ignore
 
 actions = []
+positions = []
 start_time = datetime.now()
 
 # Auxiliary functions
@@ -36,7 +39,7 @@ def get_cmd_line_params():
     )
 
     args = parser.parse_args()
-
+    
     return vars(args)
 
 
@@ -67,6 +70,12 @@ def log_action(timestamp, action, value):
 
     # EXAMPLE ->  0:00:03.716501,MOVE_JOINTS:0.03,0.0123,0.456,0.987,0.654,0.321
     actions.append(str(timestamp - start_time) + "," + action + ":" + value)
+    
+    global n
+    global positions
+
+    pos = n.get_arm_pose().position
+    positions.append(stringify([pos.x, pos.y, pos.z]))
 
 
 # Functions to change robot parameters
@@ -104,7 +113,7 @@ def fetchBlock(pos, z):
     moveRobot(pos["x"], pos["y"], z + 0.02, pos["roll"], pos["pitch"], pos["yaw"])
 
     # fetches the block
-    changeVelocity(5)
+    changeVelocity(90)
     moveRobot(pos["x"], pos["y"], z, pos["roll"], pos["pitch"], pos["yaw"])
 
     # hovers origin with the block
@@ -128,7 +137,7 @@ def dropBlock(pos, z):
 # Functional block
 try:
     cmd_params = get_cmd_line_params()
-
+    
     params = load_params(cmd_params["file"])
 
     print(" --- Starting to move blocks --- \n")
@@ -155,6 +164,10 @@ try:
         with open("logs.txt", "w") as f:
             for action in actions:
                 f.write(action + "\n")
+                
+        with open("positions.txt", "w") as f:
+            for position in positions:
+                f.write(position + "\n")
 
 
 except Exception as e:
