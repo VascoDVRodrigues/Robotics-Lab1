@@ -9,8 +9,6 @@ import argparse
 from datetime import datetime
 from os.path import exists as file_exists
 from niryo_one_python_api.niryo_one_api import *  # type: ignore
-from niryo_one_msgs.msg._RobotState import *  # type: ignore
-from geometry_msgs.msg._Point import *
 
 sys.path.insert(1, "/home/vaco/catkin_ws/src/niryo_one_python_api")  # type: ignore
 
