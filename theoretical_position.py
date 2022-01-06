@@ -7,7 +7,7 @@ import rospy  # type: ignore
 import argparse
 import numpy as np
 
-from math import cos, sin
+from math import atan, cos, sin, atan2, sqrt, pi
 from datetime import datetime
 from os.path import exists as file_exists
 from niryo_one_python_api.niryo_one_api import *  # type: ignore
@@ -141,7 +141,7 @@ def T_56(t6):
     )
 
 
-def theoretic_position(theta):
+def theoretical_position(theta):
     T = np.matmul(
         T_01(theta[0]),
         np.matmul(
@@ -149,24 +149,56 @@ def theoretic_position(theta):
         ),
     )
 
-    print("Theoretic position:")
-    print("  x: " + str(T[0][3]))
-    print("  y: " + str(T[1][3]))
-    print("  z: " + str(T[2][3]))
+    x = T[0][3]
+    y = T[1][3]
+    z = T[2][3]
+
+    beta_plus = atan2(-T[2][0], sqrt(T[0][0] ** 2 + T[1][0] ** 2))
+    if cos(beta_plus) == 0:
+        alpha_plus = 0
+        if beta_plus == pi / 2:
+            gama_plus = atan2(T[0][1], T[1][1])
+        else:
+            gama_plus = -atan2(T[0][1], T[1][1])
+    else:
+        alpha_plus = atan2(T[1][0] / cos(beta_plus), T[0][0] / cos(beta_plus))
+        gama_plus = atan2(T[2][1] / cos(beta_plus), T[2][2] / cos(beta_plus))
+
+    beta_minus = atan2(-T[2][0], -sqrt(T[0][0] ** 2 + T[1][0] ** 2))
+    if cos(beta_minus) == 0:
+        alpha_minus = 0
+        if beta_minus == pi / 2:
+            gama_minus = atan2(T[0][1], T[1][1])
+        else:
+            gama_minus = -atan2(T[0][1], T[1][1])
+    else:
+        alpha_minus = atan2(T[1][0] / cos(beta_minus), T[0][0] / cos(beta_minus))
+        gama_minus = atan2(T[2][1] / cos(beta_minus), T[2][2] / cos(beta_minus))
+
+    print("Theoretical position:")
+    print("  x: " + str(x))
+    print("  y: " + str(y))
+    print("  z: " + str(z))
+    print("Theoretical rpy:")
+    print("  roll: " +  str(gama_plus) + " / " + str(gama_minus))
+    print("  pitch: " + str(beta_plus) + " / " + str(beta_minus))
+    print("  yaw: " + str(alpha_plus) + " / " + str(alpha_minus))
     print("")
 
+
 try:
-    pi = 3.14159
+    pi_truncated = 3.14159
     n = NiryoOne()  # type: ignore
 
     n.calibrate_auto()
 
-    joints = [0, 0, pi/2, 0, 0, 0]
+    joints = [0.2, 0, pi_truncated/4, 0, 1.3, 0]
 
     n.move_joints(joints)
 
-    theoretic_position(joints)
+    theoretical_position(joints)
 
     print(n.get_arm_pose())
+
 except Exception as e:
     print(e)
